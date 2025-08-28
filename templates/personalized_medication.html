@@ -13,7 +13,6 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
-    <link rel="stylesheet" href="static/styles.css">
     <script>
         tailwind.config = {
             theme: {
@@ -30,7 +29,369 @@
             }
         }
     </script>
-    
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #3b82f6;
+            --accent-color: #0ea5e9;
+            --text-primary: #1f2937;
+            --text-secondary: #4b5563;
+            --text-muted: #6b7280;
+            --border-color: #e5e7eb;
+            --warning-color: #f59e0b;
+            --warning-bg: #fffbeb;
+            --tag-bg: #f1f5f9;
+            --error-color: #e74c3c;
+            --success-color: #2ecc71;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --transition: all 0.2s ease-in-out;
+        }
+
+        .medication-form {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: var(--shadow-md);
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+        }
+
+        .medication-form:focus-within {
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            border-color: var(--primary-color);
+        }
+
+        .input-group {
+            margin-bottom: 2rem;
+            position: relative;
+        }
+
+        .input-group:focus-within label {
+            color: var(--primary-color);
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.75rem;
+            color: var(--text-primary);
+            font-weight: 500;
+            font-size: 1.1rem;
+        }
+
+        .input-group textarea,
+        .input-group input {
+            width: 100%;
+            padding: 1.25rem;
+            border: 2px solid var(--border-color);
+            border-radius: 12px;
+            font-family: inherit;
+            font-size: 1rem;
+            line-height: 1.6;
+            transition: var(--transition);
+            background-color: #fff;
+            color: var(--text-primary);
+        }
+
+        .input-group input[type="text"] {
+            padding: 0.75rem 1.25rem;
+            font-size: 0.95rem;
+        }
+
+        .input-group textarea:focus,
+        .input-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+
+        .input-group textarea {
+            resize: vertical;
+            min-height: 120px;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 1.2rem 2rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            width: 100%;
+            font-size: 1.1rem;
+            font-weight: 500;
+            letter-spacing: 0.01em;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.2);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none !important;
+            background: #bdc3c7;
+            background-image: none;
+        }
+
+        .result-container {
+            margin-top: 2.5rem;
+            display: none;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .result-container.visible {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .recommendations {
+            background: white;
+            padding: 2rem;
+            border-radius: 16px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .interactions-warning {
+            background: var(--warning-bg);
+            border-left: 4px solid var(--warning-color);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-top: 1.5rem;
+            color: #856404;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.75rem 1.25rem;
+            color: var(--text-primary);
+            text-decoration: none;
+            margin-bottom: 1.5rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .back-btn:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .back-btn i {
+            margin-right: 0.75rem;
+            font-size: 1.1rem;
+        }
+
+        #loadingSpinner {
+            display: none;
+            text-align: center;
+            margin: 2rem 0;
+        }
+
+        .spinner {
+            border: 4px solid var(--border-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        .spinner-text {
+            margin-top: 1rem;
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .tag-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .tag {
+            background: var(--tag-bg);
+            padding: 0.5rem 1rem;
+            border-radius: 24px;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            transition: var(--transition);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            cursor: default;
+        }
+
+        .tag:hover {
+            background: #e2e8f0;
+            transform: translateY(-1px);
+        }
+
+        .tag:hover {
+            background: #e2e8f0;
+        }
+
+        .tag button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 0;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            transition: color 0.2s ease;
+        }
+
+        .tag button:hover {
+            color: var(--text-primary);
+        }
+
+        .header {
+            text-align: center;
+            padding: 3rem 2rem;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            border-radius: 0 0 30px 30px;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.75rem;
+            font-weight: 600;
+            margin: 0 0 1rem;
+            letter-spacing: -0.03em;
+        }
+
+        .header p {
+            font-size: 1.25rem;
+            opacity: 0.95;
+            margin: 0;
+            font-weight: 300;
+        }
+
+        .result-header {
+            color: var(--text-primary);
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+            letter-spacing: -0.02em;
+        }
+
+        .disclaimer {
+            margin-top: 2rem;
+            padding: 1.5rem;
+            background: var(--warning-bg);
+            border-radius: 12px;
+            color: #856404;
+            font-size: 0.9rem;
+            line-height: 1.6;
+            border-left: 4px solid var(--warning-color);
+        }
+
+        .disclaimer p {
+            margin: 0;
+        }
+
+        .input-hint {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 0.5rem;
+        }
+
+        /* Form validation */
+        .error-message {
+            color: var(--error-color);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            display: none;
+        }
+
+        .input-group.error input,
+        .input-group.error textarea {
+            border-color: var(--error-color);
+        }
+
+        .input-group.error .error-message {
+            display: block;
+        }
+
+        .input-group.success input,
+        .input-group.success textarea {
+            border-color: var(--success-color);
+        }
+
+        /* Responsive styles */
+        @media (max-width: 768px) {
+            .medication-form {
+                padding: 1.5rem;
+                margin: 1rem;
+                border-radius: 16px;
+            }
+
+            .header {
+                padding: 1.5rem 1rem;
+                border-radius: 0 0 20px 20px;
+                margin-bottom: 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.75rem;
+                margin-bottom: 0.5rem;
+            }
+
+            .header p {
+                font-size: 1.1rem;
+            }
+
+            .result-container {
+                margin: 1rem;
+                padding: 1rem;
+            }
+
+            .tag-container {
+                gap: 0.5rem;
+            }
+
+            .input-group {
+                margin-bottom: 1.5rem;
+            }
+
+            .submit-btn {
+                padding: 1rem;
+                font-size: 1rem;
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -334,67 +695,80 @@
                 }
                 
                 // Display recommendations in a clean format
-                // Display recommendations in a structured format
                 const recommendationsContent = document.getElementById('recommendationsContent');
-
-                if (data.recommended_medications && data.recommended_medications.length > 0) {
-                    let medsHtml = `
-                        <h3 class="text-xl font-semibold mb-2">💊 Recommended Medications</h3>
-                        <ul class="list-disc pl-6 mb-4">
-                    `;
-                    data.recommended_medications.forEach(med => {
-                        medsHtml += `
-                            <li class="mb-2">
-                                <strong>${med.name}</strong> – ${med.purpose}
-                                <div class="text-sm text-gray-600">Dosage: ${med.dosage}</div>
-                            </li>
-                        `;
-                    });
-                    medsHtml += `</ul>`;
-
-                    let guidelinesHtml = '';
-                    if (data.usage_guidelines && data.usage_guidelines.length > 0) {
-                        guidelinesHtml = `
-                            <h3 class="text-xl font-semibold mb-2">📋 Usage Guidelines</h3>
-                            <ul class="list-disc pl-6 mb-4">
-                                ${data.usage_guidelines.map(g => `<li>${g}</li>`).join('')}
-                            </ul>
-                        `;
+                if (data.recommendations) {
+                    try {
+                        let output = '<div class="space-y-4">';
+                        let recommendationsText = data.recommendations;
+                        
+                        // Clean up the text first
+                        recommendationsText = recommendationsText
+                            // Remove all newline characters first
+                            .replace(/\\n/g, ' ')
+                            // Remove JSON artifacts and unwanted characters
+                            .replace(/[{}'"\[\]]/g, '')
+                            // Remove double asterisks
+                            .replace(/\*\*/g, '')
+                            // Clean up remaining newlines and extra spaces
+                            .replace(/[\n\r]+/g, ' ')
+                            .replace(/\s*,\s*/g, ', ')
+                            .replace(/\s*•\s*/g, '• ')
+                            .replace(/\s*-\s*/g, ' ')
+                            .replace(/\s*:\s*/g, ': ')
+                            // Remove any remaining unwanted patterns
+                            .replace(/\s{2,}/g, ' ')
+                            .trim();
+                        
+                        // Process each section
+                        const sections = recommendationsText.split(/RECOMMENDED MEDICATIONS:|USAGE GUIDELINES:|PRECAUTIONS:|IMPORTANT DISCLAIMER:/i);
+                        
+                        // Add section headers and process content
+                        const sectionTitles = ['RECOMMENDED MEDICATIONS', 'USAGE GUIDELINES', 'PRECAUTIONS', 'IMPORTANT DISCLAIMER'];
+                        
+                        sections.forEach((section, index) => {
+                            section = section.trim();
+                            if (!section) return;
+                            
+                            // Add section header if it's not the first section (before any headers)
+                            if (index > 0 && sectionTitles[index - 1]) {
+                                output += `<div class="font-semibold text-primary text-lg mt-4 mb-2">${sectionTitles[index - 1]}:</div>`;
+                            }
+                            
+                            // Process bullet points
+                            const bulletPoints = section.split('•').filter(point => point.trim() !== '');
+                            
+                            bulletPoints.forEach(point => {
+                                point = point.trim()
+                                    .replace(/^[-*]\s*/, '')
+                                    .replace(/\s+/g, ' ')
+                                    .trim();
+                                    
+                                if (point) {
+                                    output += `
+                                    <div class="flex items-start">
+                                        <span class="text-gray-600 mr-2">•</span>
+                                        <span>${point}</span>
+                                    </div>`;
+                                }
+                            });
+                        });
+                        
+                        output += '</div>';
+                        recommendationsContent.innerHTML = output;
+                        
+                    } catch (error) {
+                        console.error('Error formatting recommendations:', error);
+                        // Fallback to plain text if formatting fails
+                        recommendationsContent.textContent = data.recommendations;
                     }
-
-                    let precautionsHtml = '';
-                    if (data.precautions && data.precautions.length > 0) {
-                        precautionsHtml = `
-                            <h3 class="text-xl font-semibold mb-2">⚠️ Precautions</h3>
-                            <ul class="list-disc pl-6 mb-4 text-red-600">
-                                ${data.precautions.map(p => `<li>${p}</li>`).join('')}
-                            </ul>
-                        `;
-                    }
-
-                    let disclaimerHtml = '';
-                    if (data.disclaimer) {
-                        disclaimerHtml = `
-                            <div class="bg-yellow-100 p-3 rounded-md mt-4">
-                                <strong>Disclaimer:</strong> ${data.disclaimer}
-                            </div>
-                        `;
-                    }
-
-                    recommendationsContent.innerHTML = medsHtml + guidelinesHtml + precautionsHtml + disclaimerHtml;
-
-                } else if (data.recommendations) {
-                    // Fallback for old-style plain recommendations
-                    recommendationsContent.innerHTML = `<p>${data.recommendations}</p>`;
                 } else {
                     recommendationsContent.innerHTML = `
                         <div class="no-recommendations">
                             <i class="fas fa-info-circle"></i>
-                            <p>No specific recommendations could be generated based on the provided information. Please consult with a healthcare provider.</p>
+                            <p>No specific recommendations could be generated based on the provided information. Please consult with a healthcare provider for personalized advice.</p>
                         </div>
                     `;
                 }
-
 
                 // Display interactions if any
                 const interactionsDiv = document.getElementById('interactionsContent');

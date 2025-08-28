@@ -32,6 +32,98 @@
 }
 
 
+/* Facility Popup */
+.facility-popup {
+    max-height: 300px;  /* Reduced from 400px */
+    min-width: 350px;   /* Added minimum width */
+    max-width: 400px;   /* Added maximum width */
+    overflow-y: auto;
+    padding: 15px;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e0 #f1f5f9;
+}
+
+.facility-popup::-webkit-scrollbar {
+    width: 6px;
+}
+
+.facility-popup::-webkit-scrollbar-track {
+    background: #f1f5f9;
+    border-radius: 3px;
+}
+
+.facility-popup::-webkit-scrollbar-thumb {
+    background-color: #cbd5e0;
+    border-radius: 3px;
+}
+
+.facility-popup h4 {
+    margin-top: 0;
+    color: #1e40af;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.facility-popup p {
+    margin: 8px 0;
+    line-height: 1.5;
+}
+
+.facility-popup .label {
+    font-weight: 600;
+    color: #4a5568;
+}
+
+.facility-popup .value {
+    color: #2d3748;
+}
+
+.facility-popup .emergency {
+    color: #e53e3e;
+    font-weight: 500;
+    margin: 10px 0;
+    padding: 6px 10px;
+    background-color: #fff5f5;
+    border-radius: 4px;
+    border-left: 3px solid #e53e3e;
+}
+
+.facility-popup .actions {
+    margin-top: 15px;
+    padding-top: 12px;
+    border-top: 1px solid #e2e8f0;
+    display: flex;
+    gap: 10px;
+}
+
+.facility-popup .actions a {
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.facility-popup .actions a:first-child {
+    background-color: #2563eb;
+    color: white;
+}
+
+.facility-popup .actions a:first-child:hover {
+    background-color: #1d4ed8;
+}
+
+.facility-popup .actions .website {
+    background-color: #e2e8f0;
+    color: #2d3748;
+}
+
+.facility-popup .actions .website:hover {
+    background-color: #cbd5e0;
+}
+
 /* drug interaction */
 
 .ai-analysis-content {
