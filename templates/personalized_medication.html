@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chiron Healthcare Assistant - Personalized Medication</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Marked.js for markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Highlight.js for syntax highlighting -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/default.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="static/styles.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#3b82f6',
+                        accent: '#0ea5e9',
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-btn">
+            <i class="fas fa-arrow-left"></i>Back to Home
+        </a>
+
+        <header class="header">
+            <h1>Personalized Medication</h1>
+            <p>Get AI-powered medication recommendations tailored to your specific health profile</p>
+        </header>
+
+        <form id="medicationForm" class="medication-form">
+            <div class="input-group">
+                <label for="condition">Medical Condition</label>
+                <textarea id="condition" placeholder="Please describe your medical condition, symptoms, and any relevant medical history..."></textarea>
+                <p class="input-hint">Include details about severity, duration, and any previous treatments that have or haven't worked.</p>
+            </div>
+
+            <div class="input-group">
+                <label for="allergies">Known Allergies</label>
+                <input type="text" id="allergyInput" placeholder="Type an allergy and press Enter">
+                <p class="input-hint">Include any drug allergies, sensitivities, or adverse reactions you've experienced.</p>
+                <div id="allergyTags" class="tag-container"></div>
+            </div>
+
+            <div class="input-group">
+                <label for="medications">Current Medications</label>
+                <input type="text" id="medicationInput" placeholder="Type a medication and press Enter">
+                <p class="input-hint">List all medications you're currently taking, including supplements and over-the-counter drugs.</p>
+                <div id="medicationTags" class="tag-container"></div>
+            </div>
+
+            <button type="submit" id="submitBtn" class="submit-btn">Get Personalized Recommendations</button>
+            
+            <div id="loadingSpinner">
+                <div class="spinner"></div>
+                <p class="spinner-text">Analyzing your health profile and generating recommendations...</p>
+            </div>
+        </form>
+
+        <div id="resultContainer" class="result-container">
+            <h2 class="result-header">Your Personalized Recommendations</h2>
+            <div id="recommendationsContent" class="recommendations"></div>
+            <div id="interactionsContent" class="interactions-warning" style="display: none;"></div>
+            <div class="disclaimer">
+                <p><strong>Important Medical Notice:</strong> These medication recommendations are generated based on the information you provided and are for reference purposes only. They should not replace professional medical advice. Always consult with a qualified healthcare provider before starting, stopping, or changing any medication regimen. Your healthcare provider can consider your complete medical history and perform necessary examinations to determine the most appropriate treatment plan for your specific situation.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        class TagManager {
+            constructor(inputId, containerId, options = {}) {
+                this.input = document.getElementById(inputId);
+                this.container = document.getElementById(containerId);
+                this.tags = new Set();
+                this.maxTags = options.maxTags || 10;
+                this.duplicateMessage = options.duplicateMessage || 'This item has already been added.';
+                this.maxLength = options.maxLength || 50;
+
+                this.initialize();
+            }
+
+            initialize() {
+                this.input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ',') {
+                        e.preventDefault();
+                        this.addTag();
+                    } else if (e.key === 'Backspace' && !this.input.value) {
+                        // Remove last tag on backspace when input is empty
+                        const tags = Array.from(this.tags);
+                        if (tags.length > 0) {
+                            this.removeTag(tags[tags.length - 1]);
+                        }
+                    }
+                });
+
+                // Prevent pasting invalid content
+                this.input.addEventListener('paste', (e) => {
+                    e.preventDefault();
+                    const text = (e.clipboardData || window.clipboardData).getData('text');
+                    const items = text.split(/[,\n\t]+/).map(item => item.trim()).filter(Boolean);
+                    
+                    if (items.length > 1) {
+                        items.forEach(item => this.addTag(item));
+                    } else {
+                        document.execCommand('insertText', false, text);
+                    }
+                });
+            }
+
+            addTag(value = null) {
+                const tagValue = value !== null ? value : this.input.value.trim();
+                
+                if (!tagValue) return false;
+
+                // Check for duplicates
+                if (this.tags.has(tagValue)) {
+                    this.showError(this.duplicateMessage);
+                    return false;
+                }
+
+                // Check max length
+                if (tagValue.length > this.maxLength) {
+                    this.showError(`Maximum ${this.maxLength} characters per tag`);
+                    return false;
+                }
+
+                // Check max tags
+                if (this.tags.size >= this.maxTags) {
+                    this.showError(`Maximum ${this.maxTags} tags allowed`);
+                    return false;
+                }
+
+                this.tags.add(tagValue);
+                this.renderTags();
+                this.input.value = '';
+                this.clearError();
+                return true;
+            }
+
+            showError(message) {
+                // Remove any existing error
+                this.clearError();
+                
+                const errorEl = document.createElement('div');
+                errorEl.className = 'error-message';
+                errorEl.textContent = message;
+                errorEl.style.animation = 'fadeIn 0.3s ease';
+                this.input.parentNode.insertBefore(errorEl, this.input.nextSibling);
+                
+                // Add error class to input
+                this.input.classList.add('error');
+                
+                // Auto-remove error after 3 seconds
+                setTimeout(() => this.clearError(), 3000);
+            }
+
+            clearError() {
+                const existingError = this.input.parentNode.querySelector('.error-message');
+                if (existingError) {
+                    existingError.style.animation = 'fadeOut 0.3s ease';
+                    setTimeout(() => existingError.remove(), 300);
+                }
+                this.input.classList.remove('error');
+            }
+
+            removeTag(tag) {
+                this.tags.delete(tag);
+                this.renderTags();
+            }
+
+            renderTags() {
+                this.container.innerHTML = '';
+                this.tags.forEach(tag => {
+                    const tagElement = document.createElement('div');
+                    tagElement.className = 'tag';
+                    tagElement.innerHTML = `
+                        <span>${this.escapeHtml(tag)}</span>
+                        <button type="button" aria-label="Remove ${this.escapeHtml(tag)}">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    `;
+                    
+                    const removeBtn = tagElement.querySelector('button');
+                    removeBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        this.removeTag(tag);
+                    });
+                    
+                    this.container.appendChild(tagElement);
+                });
+            }
+
+            escapeHtml(unsafe) {
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            }
+
+            getTags() {
+                return Array.from(this.tags);
+            }
+        }
+
+        // Initialize tag managers with configuration
+        const allergyManager = new TagManager('allergyInput', 'allergyTags', {
+            maxTags: 10,
+            duplicateMessage: 'This allergy has already been added.',
+            maxLength: 50
+        });
+
+        const medicationManager = new TagManager('medicationInput', 'medicationTags', {
+            maxTags: 15,
+            duplicateMessage: 'This medication has already been added.',
+            maxLength: 50
+        });
+
+        // Form validation
+        function validateForm() {
+            const condition = document.getElementById('condition').value.trim();
+            let isValid = true;
+            
+            // Reset previous errors
+            document.querySelectorAll('.error-message').forEach(el => el.remove());
+            document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
+            
+            // Validate condition
+            if (!condition) {
+                showFieldError('condition', 'Please describe your medical condition.');
+                isValid = false;
+            } else if (condition.length < 10) {
+                showFieldError('condition', 'Please provide more details about your condition (at least 10 characters).');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+        
+        function showFieldError(fieldId, message) {
+            const field = document.getElementById(fieldId);
+            const errorEl = document.createElement('div');
+            errorEl.className = 'error-message';
+            errorEl.textContent = message;
+            field.parentNode.classList.add('error');
+            field.parentNode.insertBefore(errorEl, field.nextSibling);
+            
+            // Scroll to the first error
+            if (fieldId === 'condition') {
+                field.focus({ preventScroll: true });
+                window.scrollTo({
+                    top: field.offsetTop - 100,
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        // Form submission
+        const form = document.getElementById('medicationForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            console.log('Form submission started');
+            
+            if (!validateForm()) {
+                console.log('Form validation failed');
+                return;
+            }
+            
+            console.log('Form validation passed');
+            
+            const condition = document.getElementById('condition').value.trim();
+            const allergies = allergyManager.getTags();
+            const currentMedications = medicationManager.getTags();
+
+            // Show loading state
+            const submitBtn = document.getElementById('submitBtn');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const resultContainer = document.getElementById('resultContainer');
+            
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            loadingSpinner.style.display = 'block';
+            resultContainer.style.display = 'none';
+            
+            // Scroll to loading spinner
+            loadingSpinner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            try {
+                const requestData = {
+                    condition: condition,
+                    allergies: allergies,
+                    current_medications: currentMedications
+                };
+                
+                console.log('Sending request to server:', requestData);
+                
+                const response = await fetch('/personalized-medication', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                console.log('Received response status:', response.status);
+                const data = await response.json().catch(err => {
+                    console.error('Error parsing JSON response:', err);
+                    throw new Error('Invalid response from server');
+                });
+                
+                console.log('Response data:', data);
+                
+                if (data.error) {
+                    console.error('Server returned an error:', data.error);
+                    throw new Error(data.error);
+                }
+                
+                // Display recommendations in a clean format
+                // Display recommendations in a structured format
+                const recommendationsContent = document.getElementById('recommendationsContent');
+
+                if (data.recommended_medications && data.recommended_medications.length > 0) {
+                    let medsHtml = `
+                        <h3 class="text-xl font-semibold mb-2">💊 Recommended Medications</h3>
+                        <ul class="list-disc pl-6 mb-4">
+                    `;
+                    data.recommended_medications.forEach(med => {
+                        medsHtml += `
+                            <li class="mb-2">
+                                <strong>${med.name}</strong> – ${med.purpose}
+                                <div class="text-sm text-gray-600">Dosage: ${med.dosage}</div>
+                            </li>
+                        `;
+                    });
+                    medsHtml += `</ul>`;
+
+                    let guidelinesHtml = '';
+                    if (data.usage_guidelines && data.usage_guidelines.length > 0) {
+                        guidelinesHtml = `
+                            <h3 class="text-xl font-semibold mb-2">📋 Usage Guidelines</h3>
+                            <ul class="list-disc pl-6 mb-4">
+                                ${data.usage_guidelines.map(g => `<li>${g}</li>`).join('')}
+                            </ul>
+                        `;
+                    }
+
+                    let precautionsHtml = '';
+                    if (data.precautions && data.precautions.length > 0) {
+                        precautionsHtml = `
+                            <h3 class="text-xl font-semibold mb-2">⚠️ Precautions</h3>
+                            <ul class="list-disc pl-6 mb-4 text-red-600">
+                                ${data.precautions.map(p => `<li>${p}</li>`).join('')}
+                            </ul>
+                        `;
+                    }
+
+                    let disclaimerHtml = '';
+                    if (data.disclaimer) {
+                        disclaimerHtml = `
+                            <div class="bg-yellow-100 p-3 rounded-md mt-4">
+                                <strong>Disclaimer:</strong> ${data.disclaimer}
+                            </div>
+                        `;
+                    }
+
+                    recommendationsContent.innerHTML = medsHtml + guidelinesHtml + precautionsHtml + disclaimerHtml;
+
+                } else if (data.recommendations) {
+                    // Fallback for old-style plain recommendations
+                    recommendationsContent.innerHTML = `<p>${data.recommendations}</p>`;
+                } else {
+                    recommendationsContent.innerHTML = `
+                        <div class="no-recommendations">
+                            <i class="fas fa-info-circle"></i>
+                            <p>No specific recommendations could be generated based on the provided information. Please consult with a healthcare provider.</p>
+                        </div>
+                    `;
+                }
+
+
+                // Display interactions if any
+                const interactionsDiv = document.getElementById('interactionsContent');
+                if (data.interactions && Object.keys(data.interactions).length > 0) {
+                    let interactionsHtml = '<h3><i class="fas fa-exclamation-triangle"></i> Potential Drug Interactions</h3><div class="interactions-list">';
+                    
+                    Object.entries(data.interactions).forEach(([drug, interactions]) => {
+                        interactionsHtml += `
+                            <div class="interaction-item">
+                                <div class="interaction-drug">
+                                    <i class="fas fa-pills"></i>
+                                    <strong>${this.escapeHtml(drug)}</strong>
+                                </div>
+                                <ul class="interaction-details">
+                                    ${interactions.map(int => 
+                                        `<li>
+                                            <i class="fas fa-chevron-right"></i>
+                                            <span>${this.escapeHtml(int.description)}</span>
+                                            ${int.severity ? `<span class="severity-badge ${int.severity.toLowerCase()}">${int.severity}</span>` : ''}
+                                        </li>`
+                                    ).join('')}
+                                </ul>
+                            </div>
+                        `;
+                    });
+                    
+                    interactionsHtml += '</div>';
+                    interactionsDiv.innerHTML = interactionsHtml;
+                    interactionsDiv.style.display = 'block';
+                } else {
+                    interactionsDiv.style.display = 'none';
+                }
+
+                // Show results with animation
+                resultContainer.style.display = 'block';
+                resultContainer.classList.add('visible');
+                
+                // Scroll to results
+                setTimeout(() => {
+                    resultContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            } catch (error) {
+                console.error('Error:', error);
+                
+                // Show detailed error message
+                console.error('Error during form submission:', error);
+                let errorMessage = 'An error occurred while generating recommendations. ';
+                
+                if (error.message) {
+                    errorMessage += `Details: ${error.message}`;
+                } else if (error.response) {
+                    errorMessage += `Server responded with status ${error.response.status}`;
+                }
+                
+                showErrorToast(errorMessage);
+            } finally {
+                // Reset loading state
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Get Personalized Recommendations';
+                loadingSpinner.style.display = 'none';
+            }
+        });
+
+        // Utility function to show error toasts
+        function showErrorToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast error';
+            toast.innerHTML = `
+                <div class="toast-icon">
+                    <i class="fas fa-exclamation-circle"></i>
+                </div>
+                <div class="toast-message">${message}</div>
+                <button class="toast-close" aria-label="Close">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            
+            document.body.appendChild(toast);
+            
+            // Show toast
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Auto-remove after delay
+            const removeToast = () => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 300);
+            };
+            
+            // Close button
+            const closeBtn = toast.querySelector('.toast-close');
+            closeBtn.addEventListener('click', removeToast);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(removeToast, 5000);
+        }
+        
+        // Add CSS for toasts
+        const toastStyles = document.createElement('style');
+        toastStyles.textContent = `
+            .toast {
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: #fff;
+                border-left: 4px solid #e74c3c;
+                border-radius: 8px;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                padding: 16px 20px;
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                max-width: 400px;
+                transform: translateX(120%);
+                transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+                z-index: 1000;
+            }
+            
+            .toast.show {
+                transform: translateX(0);
+            }
+            
+            .toast.error {
+                border-left-color: #e74c3c;
+            }
+            
+            .toast-icon {
+                font-size: 20px;
+                color: #e74c3c;
+            }
+            
+            .toast-message {
+                flex: 1;
+                font-size: 14px;
+                line-height: 1.5;
+            }
+            
+            .toast-close {
+                background: none;
+                border: none;
+                color: #95a5a6;
+                cursor: pointer;
+                padding: 4px;
+                font-size: 14px;
+                transition: color 0.2s;
+            }
+            
+            .toast-close:hover {
+                color: #7f8c8d;
+            }
+        `;
+        document.head.appendChild(toastStyles);
+        
+        // Make the tag managers globally accessible
+        window.allergyTagsManager = allergyManager;
+        window.medicationTagsManager = medicationManager;
+    </script>
+</body>
+</html>

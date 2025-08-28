@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chiron - Hospital Locator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Mapbox GL JS -->
+    <link href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" rel="stylesheet">
+    <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#3b82f6',
+                        accent: '#0ea5e9',
+                        success: '#059669',
+                        warning: '#d97706',
+                        danger: '#dc2626',
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="static/styles.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-btn">
+            <i class="fas fa-arrow-left"></i>Back to Home
+        </a>
+
+        <header class="header">
+            <h1>Hospital Locator</h1>
+            <p>Find nearby hospitals, clinics, and pharmacies in your area</p>
+        </header>
+
+        <div class="locator-form">
+            <div class="input-group">
+                <label for="address">Your Location</label>
+                <input type="text" id="address" placeholder="Enter your address or location">
+                <p class="input-hint">Enter a complete address, city, or landmark for better results</p>
+            </div>
+
+            <div class="input-group">
+                <label for="radius">Search Radius (meters)</label>
+                <input type="number" id="radius" value="5000" min="1000" max="10000" step="500">
+                <p class="input-hint">Choose between 1000 to 10000 meters (default: 5000)</p>
+            </div>
+
+            <button id="submitBtn" class="submit-btn">Find Medical Facilities</button>
+            
+            <div id="loadingSpinner">
+                <div class="spinner"></div>
+                <p class="spinner-text">Searching for nearby medical facilities...</p>
+            </div>
+        </div>
+
+        <div id="resultContainer" class="result-container">
+            <div class="facility-stats">
+                <div class="stat-card">
+                    <i class="fas fa-hospital"></i>
+                    <div id="hospitalCount" class="number">0</div>
+                    <div class="label">Hospitals Found</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-pills"></i>
+                    <div id="pharmacyCount" class="number">0</div>
+                    <div class="label">Pharmacies Found</div>
+                </div>
+            </div>
+            <div class="map-container" id="mapContainer">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize map container
+        let map = null;
+        let mapContainer = document.getElementById('map');
+        let defaultCenter = [78.9629, 20.5937]; // [lng, lat] format for Mapbox
+        let defaultZoom = 4;
+        
+        // For demo purposes, using a placeholder token
+        // You need to add your actual Mapbox access token here
+        const mapboxToken = '{{ mapbox_token }}';
+        
+        // Simple console logger
+        function debugLog(message) {
+            console.log(message);
+        }
+
+        // Initialize empty map
+        function initMap(center = defaultCenter, zoom = defaultZoom) {
+            debugLog(`Initializing map with center: ${center}, zoom: ${zoom}`);
+            
+            // Clean up existing map if any
+            if (map) {
+                debugLog('Removing existing map');
+                map.remove();
+                map = null;
+            }
+
+            // Set mapbox access token
+            if (mapboxToken && mapboxToken !== 'pk.YOUR_MAPBOX_TOKEN_HERE') {
+                mapboxgl.accessToken = mapboxToken;
+            } else {
+                console.warn('Mapbox token not set. Please add your token to use the map.');
+                return null;
+            }
+
+            // Create new map
+            debugLog('Creating new map');
+            try {
+                map = new mapboxgl.Map({
+                    container: 'map',
+                    style: 'mapbox://styles/mapbox/streets-v12',
+                    center: center,
+                    zoom: zoom,
+                    antialias: true
+                });
+                
+                // Mark container as loaded when map loads
+                map.on('load', () => {
+                    document.getElementById('mapContainer').classList.add('loaded');
+                    debugLog('Map loaded successfully');
+                });
+
+                // Add navigation control
+                map.addControl(new mapboxgl.NavigationControl());
+                
+                // Add geolocate control
+                map.addControl(new mapboxgl.GeolocateControl({
+                    positionOptions: {
+                        enableHighAccuracy: true
+                    },
+                    trackUserLocation: true,
+                    showUserHeading: true
+                }));
+
+                // Ensure map resizes to fit container
+                setTimeout(() => {
+                    if (map) {
+                        map.resize();
+                        debugLog('Map resized to fit container');
+                    }
+                }, 100);
+
+                debugLog('Map created successfully');
+                return map;
+            } catch (error) {
+                debugLog('Error creating map: ' + error.message);
+                return null;
+            }
+        }
+
+        // Create custom marker elements
+        function createMarkerElement(type) {
+            console.log('Creating marker element for type:', type);
+            const color = type === 'hospital' ? '#27ae60' : type === 'pharmacy' ? '#3498db' : '#e74c3c';
+            const icon = type === 'hospital' ? 'hospital' : type === 'pharmacy' ? 'pills' : 'map-marker-alt';
+            const size = type === 'user' ? 24 : 20;
+            
+            const el = document.createElement('div');
+            el.className = 'marker';
+            el.innerHTML = `<i class="fas fa-${icon}" style="color: ${color}; font-size: ${size}px;"></i>`;
+            el.style.width = `${size}px`;
+            el.style.height = `${size}px`;
+            el.style.display = 'flex';
+            el.style.alignItems = 'center';
+            el.style.justifyContent = 'center';
+            el.style.cursor = 'pointer';
+            
+            return el;
+        }
+
+        // Format facility details for popup
+        function formatFacilityDetails(facility) {
+            const details = facility.details;
+            let content = `
+                <div class="facility-popup">
+                    <h4>${facility.name}</h4>
+                    
+                    <p><span class="label">Type:</span> <span class="value">${facility.type.charAt(0).toUpperCase() + facility.type.slice(1)}</span></p>
+                    <p><span class="label">Distance:</span> <span class="value">${facility.distance} km</span></p>
+                    
+                    ${details.address !== 'Address not available' ? 
+                        `<p><span class="label">Address:</span> <span class="value">${details.address}</span></p>` : ''}
+                    
+                    ${details.phone !== 'Not available' ? 
+                        `<p><span class="label">Phone:</span> <span class="value">${details.phone}</span></p>` : ''}
+                    
+                    ${details.opening_hours !== 'Not specified' ? 
+                        `<p><span class="label">Hours:</span> <span class="value">${details.opening_hours}</span></p>` : ''}
+                    
+                    ${details.emergency !== 'Unknown' ? 
+                        `<p class="emergency">Emergency: ${details.emergency === 'yes' ? 'Available 24/7' : 'Not available'}</p>` : ''}
+                    
+                    ${details.healthcare !== 'General' ? 
+                        `<p><span class="label">Specialty:</span> <span class="value">${details.healthcare}</span></p>` : ''}
+                    
+                    ${details.wheelchair !== 'Unknown' ? 
+                        `<p><span class="label">Wheelchair Access:</span> <span class="value">${details.wheelchair}</span></p>` : ''}
+                    
+                    <div class="actions">
+                        <a href="${facility.directions_url}" target="_blank">Get Directions</a>
+                        ${details.website ? 
+                            `<a href="${details.website}" target="_blank" class="website" style="margin-left: 10px;">Visit Website</a>` : ''}
+                    </div>
+                </div>
+            `;
+            return content;
+        }
+
+        // Add markers to map
+        function addMarkers(data) {
+            console.log('Adding markers to map:', data);
+            if (!map) {
+                console.error('Map not initialized');
+                return;
+            }
+
+            // Clear existing markers
+            if (window.markers) {
+                window.markers.forEach(marker => marker.remove());
+            }
+            window.markers = [];
+            
+            // Wait for map to be fully loaded
+            if (map.loaded()) {
+                addMarkersToMap(data);
+            } else {
+                map.once('load', () => addMarkersToMap(data));
+            }
+        }
+
+        function addMarkersToMap(data) {
+            // Add user marker if location is available
+            if (data.userLocation) {
+                const el = createMarkerElement('user');
+                const marker = new mapboxgl.Marker(el)
+                    .setLngLat([data.userLocation.lng, data.userLocation.lat])
+                    .setPopup(new mapboxgl.Popup().setHTML('Your Location'))
+                    .addTo(map);
+                window.markers.push(marker);
+            }
+
+            // Add facility markers
+            if (data.facilities && data.facilities.length > 0) {
+                const bounds = new mapboxgl.LngLatBounds();
+                
+                data.facilities.forEach(facility => {
+                    const el = createMarkerElement(facility.type || 'facility');
+                    const popupContent = formatFacilityDetails(facility);
+                    
+                    const marker = new mapboxgl.Marker(el)
+                        .setLngLat([facility.lon, facility.lat])
+                        .setPopup(new mapboxgl.Popup().setHTML(popupContent))
+                        .addTo(map);
+                        
+                    window.markers.push(marker);
+                    bounds.extend([facility.lon, facility.lat]);
+                });
+                
+                // Fit map to show all markers with padding
+                if (data.userLocation) {
+                    bounds.extend([data.userLocation.lng, data.userLocation.lat]);
+                }
+                if (!bounds.isEmpty()) {
+                    map.fitBounds(bounds, { padding: 100 });
+                }
+            }
+
+            // Update stats
+            if (data.stats) {
+                updateStats(data.stats);
+            }
+        }
+
+        // Update facility statistics
+        function updateStats(stats) {
+            console.log('Updating stats:', stats);
+            document.getElementById('hospitalCount').textContent = stats.hospitals || 0;
+            document.getElementById('pharmacyCount').textContent = stats.pharmacies || 0;
+        }
+
+        // Initialize map on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Page loaded, initializing map');
+            try {
+                // Initialize the map
+                initMap();
+            } catch (error) {
+                console.error('Error initializing map:', error);
+            }
+        });
+
+        // Handle form submission
+        document.getElementById('submitBtn').addEventListener('click', async () => {
+            const address = document.getElementById('address').value.trim();
+            const radius = document.getElementById('radius').value;
+
+            if (!address) {
+                alert('Please enter your location to find nearby medical facilities.');
+                return;
+            }
+
+            console.log('Searching for facilities near:', address, 'with radius:', radius);
+
+            // Show loading state
+            document.getElementById('loadingSpinner').style.display = 'block';
+            document.getElementById('submitBtn').disabled = true;
+            document.getElementById('resultContainer').style.display = 'none';
+
+            try {
+                console.log('Sending request to server...');
+                const response = await fetch('/hospital-locator', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ address, radius })
+                });
+
+                const data = await response.json();
+                console.log('Received response:', data);
+                
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+
+                if (!data.user_location || typeof data.user_location.lat !== 'number' || typeof data.user_location.lon !== 'number') {
+                    throw new Error('Invalid location data received from server');
+                }
+
+                // Update map with user location
+                console.log('Initializing map with user location');
+                const newMap = initMap([data.user_location.lon, data.user_location.lat], 9);
+                
+                if (newMap) {
+                    console.log('Adding markers to map');
+                    // Add markers once map is ready
+                    setTimeout(() => {
+                        addMarkers(data);
+                    }, 500);
+                }
+
+                // Show results
+                document.getElementById('resultContainer').style.display = 'block';
+                document.getElementById('resultContainer').classList.add('visible');
+
+            } catch (error) {
+                console.error('Error:', error);
+                alert(error.message || 'An error occurred while searching for medical facilities. Please try again.');
+                
+                // Reset map to default view
+                console.log('Resetting map to default view');
+                initMap();
+            } finally {
+                // Reset loading state
+                document.getElementById('loadingSpinner').style.display = 'none';
+                document.getElementById('submitBtn').disabled = false;
+            }
+        });
+
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            if (map) {
+                setTimeout(() => {
+                    map.resize();
+                }, 100);
+            }
+        });
+    </script>
+</body>
+</html>

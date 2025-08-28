@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chiron - Drug Interaction Checker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#3b82f6',
+                        accent: '#0ea5e9',
+                        success: '#059669',
+                        warning: '#d97706',
+                        danger: '#dc2626',
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="min-h-screen">
+        <!-- Back Button -->
+        <a href="/" class="inline-flex items-center px-4 py-2 m-4 text-gray-700 transition-colors hover:bg-gray-100 rounded-lg">
+            <i class="fas fa-arrow-left mr-2"></i>
+            Back to Home
+        </a>
+
+        <!-- Header -->
+        <header class="bg-gradient-to-r from-primary to-secondary py-16 px-4 sm:px-6 lg:px-8 rounded-b-[40px] shadow-lg mb-12">
+            <div class="max-w-4xl mx-auto text-center">
+                <h1 class="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight">
+                    Drug Interaction Checker
+                </h1>
+                <p class="text-xl text-blue-100 max-w-3xl mx-auto">
+                    Check potential interactions between medications for safer drug combinations
+                </p>
+            </div>
+        </header>
+
+        <div class="container mx-auto px-4">
+            <!-- Drug Interaction Form -->
+            <div class="max-w-3xl mx-auto">
+                <div class="bg-white rounded-2xl shadow-md p-6 sm:p-8">
+                    <form id="interactionForm" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div class="space-y-2">
+                                <label for="drug1" class="block text-gray-700 text-sm font-medium">
+                                    First Medication
+                                </label>
+                                <input type="text" id="drug1" name="drug1" 
+                                       class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary 
+                                              focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-200"
+                                       placeholder="Enter medication name">
+                            </div>
+                            <div class="space-y-2">
+                                <label for="drug2" class="block text-gray-700 text-sm font-medium">
+                                    Second Medication
+                                </label>
+                                <input type="text" id="drug2" name="drug2" 
+                                       class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-primary 
+                                              focus:ring-2 focus:ring-primary/20 outline-none transition-all duration-200"
+                                       placeholder="Enter medication name">
+                            </div>
+                        </div>
+                        <button type="submit" 
+                                class="w-full bg-gradient-to-r from-primary to-secondary text-white py-4 px-6 
+                                       rounded-xl font-semibold hover:shadow-lg transition-all duration-300 
+                                       hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-primary/50 
+                                       disabled:opacity-70 disabled:cursor-not-allowed disabled:hover:transform-none">
+                            Check Interaction
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Loading Spinner -->
+                <div id="loadingSpinner" class="hidden py-12 text-center">
+                    <div class="inline-block">
+                        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                    </div>
+                    <p class="mt-4 text-gray-600 text-lg">Analyzing drug interactions...</p>
+                </div>
+
+                <!-- Results Container -->
+                <div id="resultContainer" class="mt-8 hidden">
+                    <div class="bg-white rounded-2xl shadow-md p-6 sm:p-8 space-y-6">
+                        <h2 class="text-2xl font-semibold text-gray-800">Interaction Analysis</h2>
+                        
+                        <!-- Interaction Results -->
+                        <div id="interactionResult" class="space-y-4">
+                            <!-- Results will be inserted here -->
+                        </div>
+
+                        <!-- AI Analysis -->
+                        <div id="aiAnalysis" class="mt-8 p-6 bg-gray-50 rounded-xl border border-gray-100">
+                            <h3 class="text-xl font-semibold text-gray-800 mb-4">AI-Powered Analysis</h3>
+                            <div id="aiContent" class="prose max-w-none">
+                                <!-- AI analysis will be inserted here -->
+                            </div>
+                        </div>
+                        
+                        <!-- Disclaimer -->
+                        <div class="mt-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
+                            <p class="text-yellow-800 text-sm">
+                                <strong>Important:</strong> This interaction check is for informational purposes only. 
+                                Always consult with your healthcare provider or pharmacist before making any changes 
+                                to your medication regimen. They can provide personalized advice based on your specific 
+                                health situation.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <script>
+        document.getElementById('interactionForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const form = e.target;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const resultContainer = document.getElementById('resultContainer');
+            const drug1 = document.getElementById('drug1').value.trim();
+            const drug2 = document.getElementById('drug2').value.trim();
+
+            if (!drug1 || !drug2) {
+                alert('Please enter both medications to check their interaction.');
+                return;
+            }
+
+            // Disable form and show loading
+            submitBtn.disabled = true;
+            loadingSpinner.classList.remove('hidden');
+            resultContainer.classList.add('hidden');
+
+            try {
+                const response = await fetch('/drug-interaction', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ drug1, drug2 }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Failed to check interactions');
+                }
+
+                // Format and display results
+                const severityClass = {
+                    'High': 'border-l-4 border-red-500',
+                    'Moderate': 'border-l-4 border-yellow-500',
+                    'Low': 'border-l-4 border-green-500',
+                };
+
+                const severityBadge = {
+                    'High': 'bg-red-100 text-red-800',
+                    'Moderate': 'bg-yellow-100 text-yellow-800',
+                    'Low': 'bg-green-100 text-green-800',
+                };
+
+                let resultHtml = '';
+                
+                // Show database result if available
+                if (data.database_result) {
+                    const severity = data.database_result.severity || 'Low';
+                    resultHtml = `
+                        <div class="p-6 bg-white rounded-xl ${severityClass[severity] || ''}">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-gray-800">Known Interaction</h3>
+                                <span class="px-3 py-1 rounded-full text-sm font-medium ${severityBadge[severity] || ''}">
+                                    ${severity}
+                                </span>
+                            </div>
+                            <div class="space-y-2">
+                                <p class="text-gray-600"><strong>Effect:</strong> ${data.database_result.effect || 'No specific interaction details available'}</p>
+                                <p class="text-gray-600"><strong>Recommendation:</strong> ${data.database_result.recommendation || 'Consult your healthcare provider'}</p>
+                            </div>
+                        </div>`;
+                } else {
+                    resultHtml = `
+                        <div class="p-6 bg-white rounded-xl border-l-4 border-gray-300">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-semibold text-gray-800">No Known Interaction</h3>
+                                <span class="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-800">
+                                    None Found
+                                </span>
+                            </div>
+                            <p class="text-gray-600">No known interactions were found in our database between these medications.</p>
+                        </div>`;
+                }
+
+                document.getElementById('interactionResult').innerHTML = resultHtml;
+                
+                // Show AI analysis if available
+                if (data.ai_result) {
+                    // Convert markdown to HTML and sanitize
+                    const aiContent = document.getElementById('aiContent');
+                    aiContent.innerHTML = marked.parse(data.ai_result);
+                    aiContent.classList.add('ai-analysis-content');
+                    
+                    // Add disclaimer box if not already present
+                    if (!aiContent.querySelector('.disclaimer-box')) {
+                        const disclaimer = document.createElement('div');
+                        disclaimer.className = 'disclaimer-box';
+                        disclaimer.innerHTML = '\n                        <p><strong>Disclaimer:</strong> This AI-generated analysis is for informational purposes only and should not be considered medical advice. Always consult with a qualified healthcare provider for personalized medical advice.</p>';
+                        aiContent.appendChild(disclaimer);
+                    }
+                } else {
+                    document.getElementById('aiAnalysis').classList.add('hidden');
+                }
+                
+                resultContainer.classList.remove('hidden');
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while checking drug interactions. Please try again.');
+            } finally {
+                // Re-enable form and hide loading
+                submitBtn.disabled = false;
+                loadingSpinner.classList.add('hidden');
+            }
+        });
+    </script>
+</body>
+</html>
