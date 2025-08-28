@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chiron Healthcare Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#2563eb',
+                        secondary: '#3b82f6',
+                        accent: '#0ea5e9',
+                    },
+                    fontFamily: {
+                        sans: ['Poppins', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="min-h-screen">
+        <header class="bg-gradient-to-r from-primary to-secondary py-16 px-4 sm:px-6 lg:px-8 rounded-b-[40px] shadow-lg mb-12">
+            <div class="max-w-7xl mx-auto text-center">
+                <h1 class="text-4xl sm:text-5xl font-bold text-white mb-4 tracking-tight">
+                    Chiron Healthcare Assistant
+                </h1>
+                <p class="text-xl text-blue-100 max-w-3xl mx-auto">
+                    Your intelligent medical companion for personalized healthcare
+                </p>
+            </div>
+        </header>
+
+        <div class="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8 max-w-7xl mx-auto">
+                <!-- Symptom Checker Card -->
+                <div onclick="window.location.href='/symptom-checker'" 
+                     class="group bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer border border-gray-100">
+                    <div class="flex items-center space-x-4 mb-6">
+                        <div class="bg-blue-100 p-3 rounded-xl group-hover:bg-blue-200 transition-colors duration-300">
+                            <i class="fas fa-stethoscope text-2xl text-primary"></i>
+                        </div>
+                        <h3 class="text-2xl font-semibold text-gray-800">Symptom Checker</h3>
+                    </div>
+                    <p class="text-gray-600 leading-relaxed">
+                        Get instant AI-powered analysis of your symptoms and understand potential health conditions.
+                    </p>
+                </div>
+
+                <!-- Drug Interaction Card -->
+                <div onclick="window.location.href='/drug-interaction'"
+                     class="group bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer border border-gray-100">
+                    <div class="flex items-center space-x-4 mb-6">
+                        <div class="bg-blue-100 p-3 rounded-xl group-hover:bg-blue-200 transition-colors duration-300">
+                            <i class="fas fa-pills text-2xl text-primary"></i>
+                        </div>
+                        <h3 class="text-2xl font-semibold text-gray-800">Drug Interaction</h3>
+                    </div>
+                    <p class="text-gray-600 leading-relaxed">
+                        Ensure your medications work safely together by checking for potential interactions and risks.
+                    </p>
+                </div>
+
+                <!-- Personalized Medication Card -->
+                <div onclick="window.location.href='/personalized-medication'"
+                     class="group bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer border border-gray-100">
+                    <div class="flex items-center space-x-4 mb-6">
+                        <div class="bg-blue-100 p-3 rounded-xl group-hover:bg-blue-200 transition-colors duration-300">
+                            <i class="fas fa-clipboard-list text-2xl text-primary"></i>
+                        </div>
+                        <h3 class="text-2xl font-semibold text-gray-800">Personalized Medication</h3>
+                    </div>
+                    <p class="text-gray-600 leading-relaxed">
+                        Receive tailored medication recommendations based on your specific condition and health profile.
+                    </p>
+                </div>
+
+                <!-- Hospital Locator Card -->
+                <div onclick="window.location.href='/hospital-locator'"
+                     class="group bg-white rounded-2xl p-8 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-2 cursor-pointer border border-gray-100">
+                    <div class="flex items-center space-x-4 mb-6">
+                        <div class="bg-blue-100 p-3 rounded-xl group-hover:bg-blue-200 transition-colors duration-300">
+                            <i class="fas fa-hospital text-2xl text-primary"></i>
+                        </div>
+                        <h3 class="text-2xl font-semibold text-gray-800">Hospital Locator</h3>
+                    </div>
+                    <p class="text-gray-600 leading-relaxed">
+                        Find nearby hospitals, clinics, and pharmacies in your area.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <br>
+    <br>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
