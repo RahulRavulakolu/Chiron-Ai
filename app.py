@@ -393,5 +393,6 @@ def find_hospitals():
         print(f"Error in find_hospitals: {str(e)}")
         return jsonify({'error': 'An error occurred while searching for medical facilities. Please try again.'})
 
-if __name__ == '__main__':
-    app.run(debug=True)
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 5000))  # Render provides PORT environment variable
+    app.run(host="0.0.0.0", port=port, debug=True)
